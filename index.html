@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>日记挖掘伙伴 🍡</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍡%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="open-props.min.css?v=20260914" />
+    <link rel="stylesheet" href="style.css?v=20261014b" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">日记挖掘伙伴 🍡</div>
+      <div class="style-area">
+        <label for="convSelect">对话风格</label>
+        <select id="convSelect"></select>
+        <label for="genSelect">生成风格</label>
+        <select id="genSelect"></select>
+        <button id="myStyleBtn" class="ghost" title="粘贴你自己的日记，让生成模仿你的语气">我的文风</button>
+      </div>
+      <div class="key-area">
+        <input id="apiKeyInput" type="password" placeholder="粘贴 DeepSeek API Key" />
+        <button id="saveKeyBtn">保存 Key</button>
+        <span id="keyStatus" class="warn">尚未填写 Key</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="chat-panel">
+        <div id="chatBox" class="chat-box"></div>
+        <div class="composer">
+          <textarea
+            id="userInput"
+            placeholder="说点今天的事，或回伙伴的问题…（Enter 发送，Shift+Enter 换行）"
+          ></textarea>
+          <div class="composer-btns">
+            <button id="sendBtn">发送</button>
+            <button id="generateBtn" class="primary">生成日记 ✦</button>
+            <button id="newBtn">新对话</button>
+          </div>
+        </div>
+        <div id="statusLine" class="status"></div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="diary-wrap">
+          <h3>今天的日记</h3>
+          <div id="diaryBox" class="diary-box"></div>
+          <div class="diary-actions" id="diaryActions" hidden>
+            <button id="editBtn" title="改这篇日记的标题 / 正文 / 情绪 / 标签">编辑</button>
+            <button id="saveImageBtn" class="primary" title="导出一张手账风图片，可直接分享">存为图片</button>
+            <button id="copyTextBtn" title="把这篇日记复制成纯文字">复制文字</button>
+          </div>
+        </div>
+        <div class="history-wrap">
+          <h3>历史日记</h3>
+          <div id="historyList" class="history-list"></div>
+        </div>
+      </aside>
+    </main>
+
+    <div id="myStyleModal" class="modal-mask" hidden>
+      <div class="modal">
+        <h3>我的文风</h3>
+        <p class="modal-hint">
+          把你以前写的日记（或任何代表你语气的文字）粘进来，生成日记时会模仿这种语气。<br />
+          多篇之间用<strong>空行</strong>分隔；为控成本，只取前 3 篇、每篇前 400 字。内容只存在你自己的浏览器里。
+        </p>
+        <textarea id="myStyleInput" placeholder="把你自己写的日记粘在这里…（多篇之间空一行）"></textarea>
+        <label class="modal-toggle">
+          <input type="checkbox" id="myStyleEnabled" />
+          生成日记时模仿我的文风
+        </label>
+        <div class="modal-foot">
+          <span id="myStyleCount" class="modal-count"></span>
+          <button id="myStyleClear">清空</button>
+          <button id="myStyleClose">关闭</button>
+          <button id="myStyleSave" class="primary">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="editModal" class="modal-mask" hidden>
+      <div class="modal">
+        <h3>编辑这篇日记</h3>
+        <p class="modal-hint">
+          改完点「保存修改」，会覆盖这一篇。生成时间和原始对话保持不变。<br />
+          改过的内容会参与之后的「跨天记忆」和用户画像 —— 也就是你亲手校过的版本才作数。
+        </p>
+        <label class="modal-label" for="editTitle">标题</label>
+        <input type="text" id="editTitle" class="modal-input" maxlength="60" placeholder="给今天起个名字" />
+        <label class="modal-label" for="editContent">正文</label>
+        <textarea id="editContent" placeholder="今天发生了什么…"></textarea>
+        <label class="modal-label" for="editMood">情绪（一个词）</label>
+        <input type="text" id="editMood" class="modal-input" maxlength="20" placeholder="如：疲惫 / 开心 / 平平" />
+        <label class="modal-label" for="editKeywords">标签（逗号或空格分隔）</label>
+        <input type="text" id="editKeywords" class="modal-input" placeholder="如：军训, 室友, 食堂" />
+        <div class="modal-foot">
+          <span id="editCount" class="modal-count"></span>
+          <button id="editCancel">取消</button>
+          <button id="editSave" class="primary">保存修改</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="config.js?v=20261013" defer></script>
+    <script src="store.js?v=20261014" defer></script>
+    <script src="api.js?v=20261013" defer></script>
+    <script src="styles.js?v=20261014b" defer></script>
+    <script src="mystyle.js?v=20261013" defer></script>
+    <script src="profile.js?v=20260912" defer></script>
+    <script src="exporter.js?v=20261014b" defer></script>
+    <script src="app.js?v=20261014c" defer></script>
+  </body>
+</html>

@@ -1,0 +1,520 @@
+/* style.css —— 设计 token 驱动的重设计
+   色彩来自用户提供 palette：
+     WHITE TEA #EBE8E0 | ALOE #C8CBB2 | ARTICHOKE #9A9679 | GRASSLAND #9D9D88 | DRAGON #5C563F
+   圆角/阴影/缓动仍来自本地 open-props.min.css。class 名不动，app.js 无需改动。 */
+
+/* ---------- 1. 语义 token：想换肤只改这一块 ---------- */
+:root {
+  --bg-grad: linear-gradient(135deg, #F8F5EE, #DCE6D2);
+  --surface: #FFFFFF;          /* 更亮：纯白卡片 */
+  --surface-2: #F3F0E7;        /* 悬浮/次级表面 */
+  --surface-3: #E8E4D7;        /* 次级按钮 hover 底色 */
+  --text: #5C563F;             /* DRAGON 主文字（保对比） */
+  --text-muted: #A39E84;       /* 提亮的 ARTICHOKE */
+  --border: #DBDEC9;           /* 更亮的 ALOE 描边 */
+
+  --accent: #6F8E5A;           /* 提亮的鲜橄榄绿（palette sage 提亮版） */
+  --accent-hover: #5F7C4C;
+  --accent-soft: #DDE7CF;      /* 浅 sage 强调底 */
+  --accent-ink: #4A5A38;       /* 深绿字 */
+
+  --me-bubble: #DDE7CF;        /* 更亮 sage */
+  --ai-bubble: #F8F5EE;        /* 浅奶油 */
+
+  --ok: var(--green-6);
+  --warn: var(--orange-6);
+  --danger: var(--red-6);
+
+  --radius-card: var(--radius-3);
+  --radius-sm: var(--radius-2);
+  --shadow-card: var(--shadow-2);
+  --shadow-hover: var(--shadow-3);
+  --ease: var(--ease-3);
+}
+
+/* ---------- 2. 基础 ---------- */
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;            /* 整页锁一屏，滚动交给内部的聊天区/侧栏 */
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg-grad);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 3. 顶栏 ---------- */
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.brand {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: .3px;
+  color: var(--accent-ink);
+}
+.key-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.key-area input {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 220px;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.key-area input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.key-area button {
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background .2s var(--ease), transform .1s var(--ease);
+}
+.key-area button:hover { background: var(--surface-3); }
+.key-area button:active { transform: translateY(1px); }
+
+.style-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.style-area label { white-space: nowrap; }
+.style-area select {
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  max-width: 140px;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.style-area select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+#keyStatus.ok { color: var(--ok); font-weight: 600; }
+#keyStatus.warn { color: var(--warn); font-weight: 600; }
+
+/* ---------- 4. 主布局 ---------- */
+.layout {
+  flex: 1 1 auto;
+  min-height: 0;                       /* 关键：允许在 flex 列里被压缩 */
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  grid-template-rows: minmax(0, 1fr);  /* 关键：行高锁死，不随内容长 */
+  gap: 16px;
+  padding: 16px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;                       /* 关键：让内部的聊天区能滚动而不是撑开 */
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+.chat-box {
+  flex: 1 1 auto;
+  min-height: 0;                 /* 关键：让它成为真正的滚动容器 */
+  overflow-y: auto;
+  overscroll-behavior: contain;  /* 滚到头也不带着整页滚 */
+  padding-right: 6px;
+}
+.msg { display: flex; margin: 12px 0; }
+.msg.me { justify-content: flex-end; }
+.bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-shadow: var(--shadow-1);
+  animation: fadeUp .3s var(--ease) both;
+}
+.msg.ai .bubble {
+  background: var(--ai-bubble);
+  border-bottom-left-radius: 5px;
+}
+.msg.me .bubble {
+  background: var(--me-bubble);
+  border-bottom-right-radius: 5px;
+}
+
+.composer { margin-top: 12px; }
+.composer textarea {
+  width: 100%;
+  height: 64px;
+  resize: none;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.composer textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.composer-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.composer-btns button {
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background .2s var(--ease), transform .1s var(--ease), box-shadow .2s var(--ease);
+}
+.composer-btns button:hover { background: var(--surface-3); box-shadow: var(--shadow-1); }
+.composer-btns button:active { transform: translateY(1px); }
+.composer-btns button.primary {
+  background: var(--accent);
+  color: #fff;
+}
+.composer-btns button.primary:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-2);
+}
+.composer-btns button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.status {
+  margin-top: 8px;
+  font-size: 13px;
+  min-height: 18px;
+  color: var(--text-muted);
+}
+.status.error { color: var(--danger); font-weight: 600; }
+
+/* ---------- 5. 侧栏 ---------- */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 16px;
+  overflow-y: auto;
+}
+.side-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--accent-ink);
+}
+.diary-box,
+.history-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+  min-height: 80px;
+  animation: fadeUp .35s var(--ease) both;
+}
+.diary-card { line-height: 1.7; animation: fadeUp .35s var(--ease) both; }
+.diary-title { margin: 0 0 6px; font-size: 18px; color: var(--text); }
+.diary-meta { margin-bottom: 10px; font-size: 13px; color: var(--text-muted); }
+.mood {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 10px;
+  padding: 2px 10px;
+  margin-right: 6px;
+  font-weight: 600;
+}
+.tag {
+  color: var(--text-muted);
+  margin-right: 6px;
+  font-size: 12px;
+}
+/* 「已编辑」标记（卡片 + 历史列表共用）：只提示"这篇被手改过"。
+   用虚线圈而不是实心底，跟情绪标签（实心）区分开 —— 别让人误以为它是个内容标签。
+   具体修改时间放在 title 里，悬停可见（cursor:help 就是在暗示"这里有说明"）。 */
+.edited-mark {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: help;
+}
+.diary-content { margin: 0; white-space: pre-wrap; }
+
+/* 编辑 / 导出按钮：只在有日记时出现（renderDiary 里去掉 hidden） */
+.diary-actions {
+  display: flex;
+  flex-wrap: wrap; /* 窗口窄的时候宁可换行，也别把按钮挤出容器 */
+  gap: 8px;
+  margin-top: 12px;
+}
+/* display:flex 会盖掉 [hidden]，所以必须显式兜回来 */
+.diary-actions[hidden] { display: none; }
+.diary-actions button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .2s var(--ease), border-color .2s var(--ease),
+              box-shadow .2s var(--ease), transform .1s var(--ease);
+}
+.diary-actions button:hover { background: var(--surface-2); box-shadow: var(--shadow-1); }
+.diary-actions button:active { transform: translateY(1px); }
+.diary-actions button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.diary-actions button.primary:hover { background: var(--accent-hover); }
+.diary-actions button:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.history-item {
+  position: relative;
+  padding: 9px 46px 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 8px;
+  background: var(--surface);
+  transition: background .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease);
+  animation: fadeUp .3s var(--ease) both;
+}
+.history-item:hover {
+  background: var(--surface-2);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+.h-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.h-date { font-size: 12px; color: var(--text-muted); }
+.h-style {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 8px;
+  padding: 1px 8px;
+  margin-right: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.h-style-row { margin-top: 4px; }
+.h-del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 3px 9px;
+  border: none;
+  border-radius: 6px;
+  background: var(--red-1);
+  color: var(--red-11);
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s var(--ease), background .15s var(--ease);
+}
+.history-item:hover .h-del { opacity: 1; }
+.h-del:hover { background: var(--red-2); }
+
+.empty { color: var(--text-muted); font-size: 13px; }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ---------- 6. 「我的文风」按钮与弹窗 ---------- */
+button.ghost {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+}
+button.ghost:hover { background: var(--surface-2); }
+button.ghost.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(92, 86, 63, 0.32);
+}
+.modal-mask[hidden] { display: none; }
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-3);
+  padding: 18px;
+  animation: fadeUp .25s var(--ease) both;
+}
+.modal h3 { margin: 0 0 6px; font-size: 16px; color: var(--accent-ink); }
+.modal-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+.modal textarea {
+  width: 100%;
+  height: 200px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.modal textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* 编辑弹窗：字段标签 + 单行输入框（整体复用 .modal 的样式语言） */
+.modal-label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+.modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.modal-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* 正文框比「我的文风」那个矮一点，让编辑弹窗不至于超出一屏 */
+#editContent { height: 170px; }
+.modal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.modal-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-count {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.modal-foot button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s var(--ease);
+}
+.modal-foot button:hover { background: var(--surface-3); }
+.modal-foot button.primary { background: var(--accent); color: #fff; }
+.modal-foot button.primary:hover { background: var(--accent-hover); }
